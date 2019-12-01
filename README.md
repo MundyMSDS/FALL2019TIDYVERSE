@@ -119,6 +119,16 @@ Author: Zach Alexander
 ## Masculinity Dataset
 Author: Amber Ferger
 
+## Baseball Salaries and Baseball Teams Datasets from Kaggle
+Author: Jim Mundy
+
+Part 1
+I am using two baseball datasets from Kaggle to recreate a FiveThirtyEight visual on baseball payrolls. You can see the rpubs file here:
+http://rpubs.com/mutuelinvestor/555231. This example also provides a vignette on dplyr's five verbs
+
+
+
+
 * Part 1: I decided to use the dataset that corresponds to the What Do Men Think It Means To Be A Man? article on FiveThirtyEight.com. The article can be found here: https://fivethirtyeight.com/features/what-do-men-think-it-means-to-be-a-man/. This project focuses on the tibble, dplyr, and ggplot 2 packages. I focus on aggregating the data and displaying differences in responses between 2 demographic features. The final markdown file can be found here: http://rpubs.com/amberferger/DATA607_Tidyverse
 
 * Part 2: I extended the Fight Songs vignette by Scott Reed to include additional aggregations. 
