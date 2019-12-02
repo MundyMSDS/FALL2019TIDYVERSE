@@ -1,0 +1,94 @@
+
+
+ mkolp0-" 
+date: "11/30/2019"
+output: html_document
+---
+
+```{r}
+library(knitr)
+library(tidyverse)
+library(formattable)
+library(ggthemes)
+```
+
+# Read Data using readr
+
+We use a fixed commit because this version has a data issue. 
+
+```{r}
+df <- read_csv("https://raw.githubusercontent.com/willoutcault/Data607-Data-Acquisition/975ba8d48e0c3d8590bd9afa79e75632152aabfc/runningbacks%20consolidated.csv")
+```
+
+# Select Factors of Interest
+```{r}
+df2 <- select(df, "DisplayName", "PlayerHeight","PossessionTeam", "PlayerWeight")
+```
+
+# Seperate Feet and Inches in Height Column
+The height column has actually been misparsed as a date (e.g. 02-Jun for 6 feet 2 inches). we can use Lubridate to parse this out and recover, but we have to be a bit clever because the misparsing reads as Jun-00 for someone 6 feet exactly. So we replace the 00 with 13 using stringr and then take the month compoennt as feet, and the inches component we check if the day is 13 and take that as 0 otherwise we use days directly.  
+```{r}
+df2$playerHeightDate <- lubridate::parse_date_time(str_replace(df2$PlayerHeight,"00","13"), c("d-b","b-d"))
+df3 <- df2
+df3$feet <- lubridate::month(df2$playerHeightDate)
+df3$inches <- ifelse(lubridate::day(df2$playerHeightDate)==13,0,lubridate::day(df2$playerHeightDate)) 
+```
+
+# Create Column with Total Inches
+```{r}
+df4 <- df3 %>% mutate(Height = (feet*12) + inches) %>%
+  select("DisplayName", "Height", "PlayerWeight", "PossessionTeam")
+```
+
+# Use BMI Forumla to Calculate Player's BMI
+```{r}
+df5 <- df4 %>%
+  mutate(bmi = 703*PlayerWeight/(Height^2))
+kable(head(df5))
+```
+
+
+```{r}
+df5 %>% ggplot(aes(bmi)) + geom_histogram()
+```
+
+## Calculate Standardized Player BMI
+```{r}
+df6 <- df5 %>% 
+  summarize(
+    meanbmi = mean(bmi),
+    sdbmi = sd(bmi)
+  )
+
+df6
+
+```
+
+```{r echo=TRUE, warning=FALSE, message=FALSE}
+
+df5 <- df5 %>% 
+  mutate(meanbmi = df6$meanbmi) %>% 
+  mutate(sdbmi = df6$sdbmi) %>% 
+  mutate(standardizedbmi = (bmi-meanbmi)/sdbmi)
+
+head(df5)
+```
+
+## Standardized BMI by Player Weight
+
+```{r echo=TRUE, warning=FALSE, message=FALSE}
+p <- ggplot(df5, aes(x=standardizedbmi, y=PlayerWeight)) + 
+    geom_point(alpha=0.75, size=3) + 
+    stat_smooth(data=within(df5, PossessionTeam <- NULL), color="grey", size=.5,
+                method="lm", formula = y ~ poly(x, 2), se=FALSE) +
+    stat_smooth(size=1.5, method="lm", formula = y ~ poly(x, 2), se=FALSE) +
+    scale_color_identity() +
+    scale_x_continuous(name="Standardized BMI\n(# of standard deviations from mean)",
+                       breaks=c(-2, 0, 2), limit=c(-2.5, 2.5), labels=c("-2", "0", "+2")) +
+    scale_y_continuous(name="Player Height") +
+    facet_wrap(~PossessionTeam, ncol=5, scales="free_x") +
+    theme_fivethirtyeight() 
+
+p
+
+```
